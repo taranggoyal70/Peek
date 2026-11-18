@@ -13,6 +13,7 @@ struct RevealExperienceView: View {
     @State private var showReplay = false
     @State private var ambientGlow = false
     private var progress: Double { posture.revealProgress }
+    private static let breathe = Animation.easeInOut(duration: 2.4).repeatForever(autoreverses: true)
 
     var body: some View {
         ZStack {
@@ -20,11 +21,9 @@ struct RevealExperienceView: View {
             if phase == .result { resultView } else { revealStage }
         }
         .task { await prepareAndStart() }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                ambientGlow = true
-            }
-        }
+        // The glow animation is scoped to the views that breathe (see `breathe`), so the
+        // repeating animation never catches the layout of the photo, camera, or controls.
+        .onAppear { ambientGlow = true }
         .onChange(of: posture.posture) { old, new in
             guard phase == .revealing else { return }
             if new == .partiallyOpen && old == .closed { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
@@ -38,6 +37,7 @@ struct RevealExperienceView: View {
         GeometryReader { proxy in
             ZStack {
                 revealBackdrop
+                    .animation(Self.breathe, value: ambientGlow)
 
                 invitation
                     .opacity(max(0, 1 - progress * 2.4))
@@ -123,6 +123,7 @@ struct RevealExperienceView: View {
 
             RevealOrb(glowing: ambientGlow)
                 .frame(width: 190, height: 190)
+                .animation(Self.breathe, value: ambientGlow)
 
             Spacer(minLength: 55)
 
@@ -165,6 +166,7 @@ struct RevealExperienceView: View {
                 )
                 .overlay(Capsule().stroke(LinearGradient(colors: [Color.peekPink.opacity(0.75), .white.opacity(0.24), Color(hex: "7790FF")], startPoint: .leading, endPoint: .trailing)))
                 .shadow(color: Color(hex: "526FFF").opacity(ambientGlow ? 0.65 : 0.35), radius: ambientGlow ? 28 : 17, y: 8)
+                .animation(Self.breathe, value: ambientGlow)
             }
             .buttonStyle(.plain)
             .disabled(posture.hasRealHinge)

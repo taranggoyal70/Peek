@@ -27,6 +27,7 @@ struct DemoCameraPreview: View {
             Text("SIMULATED REACTION").font(.caption2.weight(.semibold)).tracking(1.4)
                 .foregroundStyle(.white.opacity(0.5)).frame(maxHeight: .infinity, alignment: .bottom).padding(18)
         }
-        .onAppear { withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) { drift = true } }
+        .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: drift)
+        .onAppear { drift = true }
     }
 }

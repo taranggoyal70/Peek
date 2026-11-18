@@ -39,19 +39,11 @@ struct InboxView: View {
                 }
             }
             .onAppear {
-                withAnimation(
-                    .easeInOut(duration: 2.2)
-                        .repeatForever(autoreverses: true)
-                ) {
-                    isFloating = true
-                }
-
-                withAnimation(
-                    .easeInOut(duration: 1.6)
-                        .repeatForever(autoreverses: true)
-                ) {
-                    glow = true
-                }
+                // Animations are scoped with .animation(_:value:) on the views that float and glow.
+                // A repeatForever withAnimation here would also catch the first layout of the glass
+                // buttons, and they would grow and shrink forever.
+                isFloating = true
+                glow = true
             }
         }
         .preferredColorScheme(.dark)
@@ -93,8 +85,12 @@ struct InboxView: View {
                 endRadius: 280
             )
         }
+        .animation(Self.pulse, value: glow)
         .ignoresSafeArea()
     }
+
+    private static let float = Animation.easeInOut(duration: 2.2).repeatForever(autoreverses: true)
+    private static let pulse = Animation.easeInOut(duration: 1.6).repeatForever(autoreverses: true)
 
     // MARK: - Header
 
@@ -141,6 +137,8 @@ struct InboxView: View {
                     radius: glow ? 34 : 20,
                     y: 12
                 )
+                .animation(Self.float, value: isFloating)
+                .animation(Self.pulse, value: glow)
 
             VStack(spacing: 9) {
                 Text(heroTitle)
