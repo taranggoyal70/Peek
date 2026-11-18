@@ -1,0 +1,11 @@
+# Secrets: copy RevenueCat.plist.example to Peek/RevenueCat.plist and add your public SDK key
+Peek/RevenueCat.plist
+
+# Xcode
+xcuserdata/
+DerivedData/
+build/
+*.xcscmblueprint
+
+# macOS
+.DS_Store
