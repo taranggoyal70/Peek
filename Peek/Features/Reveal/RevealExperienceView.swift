@@ -31,6 +31,9 @@ struct RevealExperienceView: View {
         }
         .duoHingeObserver(posture: posture)
         .preferredColorScheme(.dark)
+        // A full-screen moment: the close button is the only way out, and the tab bar stays away.
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private var revealStage: some View {
@@ -141,39 +144,44 @@ struct RevealExperienceView: View {
 
             Spacer(minLength: 28)
 
-            Text(posture.hasRealHinge ? "READY FOR YOUR REACTION" : "SIMULATED REACTION")
+            // This label is about the camera, so it follows the camera, not the hinge.
+            Text(capture.usesDemoCamera ? "SIMULATED REACTION" : "READY FOR YOUR REACTION")
                 .font(.caption2.weight(.semibold))
                 .tracking(3.2)
                 .foregroundStyle(.white.opacity(0.38))
 
-            Button { simulateUnfold() } label: {
-                HStack {
-                    Spacer()
-                    Text("Unfold to reveal")
-                        .font(.headline)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.title3.bold())
-                        .frame(width: 48, height: 48)
-                        .background(.white.opacity(0.14), in: Circle())
+            // With a real hinge the phone itself is the control, so no dead button is shown.
+            if posture.hasRealHinge {
+                Spacer(minLength: 34).frame(maxHeight: 96)
+            } else {
+                Button { simulateUnfold() } label: {
+                    HStack {
+                        Spacer()
+                        Text("Unfold to reveal")
+                            .font(.headline)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.title3.bold())
+                            .frame(width: 48, height: 48)
+                            .background(.white.opacity(0.14), in: Circle())
+                    }
+                    .padding(7)
+                    .padding(.leading, 48)
+                    .foregroundStyle(.white)
+                    .background(
+                        LinearGradient(colors: [Color.peekPink.opacity(0.26), Color(hex: "526FFF").opacity(0.42)], startPoint: .leading, endPoint: .trailing),
+                        in: Capsule()
+                    )
+                    .overlay(Capsule().stroke(LinearGradient(colors: [Color.peekPink.opacity(0.75), .white.opacity(0.24), Color(hex: "7790FF")], startPoint: .leading, endPoint: .trailing)))
+                    .shadow(color: Color(hex: "526FFF").opacity(ambientGlow ? 0.65 : 0.35), radius: ambientGlow ? 28 : 17, y: 8)
+                    .animation(Self.breathe, value: ambientGlow)
                 }
-                .padding(7)
-                .padding(.leading, 48)
-                .foregroundStyle(.white)
-                .background(
-                    LinearGradient(colors: [Color.peekPink.opacity(0.26), Color(hex: "526FFF").opacity(0.42)], startPoint: .leading, endPoint: .trailing),
-                    in: Capsule()
-                )
-                .overlay(Capsule().stroke(LinearGradient(colors: [Color.peekPink.opacity(0.75), .white.opacity(0.24), Color(hex: "7790FF")], startPoint: .leading, endPoint: .trailing)))
-                .shadow(color: Color(hex: "526FFF").opacity(ambientGlow ? 0.65 : 0.35), radius: ambientGlow ? 28 : 17, y: 8)
-                .animation(Self.breathe, value: ambientGlow)
+                .buttonStyle(.plain)
+                .accessibilityHint("Simulates unfolding the device")
+                .padding(.horizontal, 34)
+                .padding(.top, 34)
+                .padding(.bottom, 34)
             }
-            .buttonStyle(.plain)
-            .disabled(posture.hasRealHinge)
-            .accessibilityHint(posture.hasRealHinge ? "Unfold your device to continue" : "Simulates unfolding the device")
-            .padding(.horizontal, 34)
-            .padding(.top, 34)
-            .padding(.bottom, 34)
         }
     }
 
@@ -253,10 +261,12 @@ struct RevealExperienceView: View {
 private struct NeonHorizon: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: -rect.width * 0.12, y: rect.height * 0.58))
+        // Starts high enough on the left that the line passes above the "Unfold to reveal" title
+        // instead of through it.
+        path.move(to: CGPoint(x: -rect.width * 0.12, y: rect.height * 0.5))
         path.addCurve(
             to: CGPoint(x: rect.width * 1.08, y: rect.height * 0.2),
-            control1: CGPoint(x: rect.width * 0.36, y: rect.height * 0.43),
+            control1: CGPoint(x: rect.width * 0.36, y: rect.height * 0.4),
             control2: CGPoint(x: rect.width * 0.78, y: rect.height * 0.56)
         )
         path.addLine(to: CGPoint(x: rect.width * 1.08, y: rect.height * 1.1))
