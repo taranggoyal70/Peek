@@ -19,11 +19,6 @@ final class AppModel {
         incomingPeeks.first { !$0.isOpened }
     }
 
-    func hasPeek(after peek: Peek) -> Bool {
-        guard let index = incomingPeeks.firstIndex(where: { $0.id == peek.id }) else { return false }
-        return incomingPeeks.dropFirst(index + 1).contains { !$0.isOpened }
-    }
-
     func markOpened(_ peek: Peek) {
         guard let index = incomingPeeks.firstIndex(where: { $0.id == peek.id }) else { return }
         incomingPeeks[index].isOpened = true

@@ -32,7 +32,8 @@ struct InboxView: View {
                 if model.selectedTab == .received {
                     RevealExperienceView(
                         peek: peek,
-                        appModel: model
+                        appModel: model,
+                        onNext: { next in path = [next] }
                     )
                 } else {
                     SenderReactionsView(peek: DemoData.sent)

@@ -5,6 +5,8 @@ struct RevealExperienceView: View {
     enum Phase { case preparing, revealing, finishing, result }
     let peek: Peek
     @Bindable var appModel: AppModel
+    /// Opens another Peek in place of this one. Without it, the result screen just closes.
+    var onNext: ((Peek) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var posture = DuoPostureService()
     @State private var capture = ReactionCaptureService()
@@ -224,6 +226,13 @@ struct RevealExperienceView: View {
             }.padding(.horizontal, 20)
             ZStack(alignment: .bottomTrailing) {
                 DemoPhoto(name: peek.imageName).clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    .overlay(alignment: .bottomLeading) {
+                        if let caption = peek.caption {
+                            Text(caption).font(.headline).lineLimit(2)
+                                .shadow(color: .black.opacity(0.55), radius: 6)
+                                .padding(18).padding(.trailing, 132)   // stay clear of the reaction thumbnail
+                        }
+                    }
                 reactionPreview.frame(width: 112, height: 150).clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 25).stroke(.white, lineWidth: 3)).shadow(color: .black.opacity(0.5), radius: 15).padding(15).scaleEffect(showReplay ? 1.04 : 1)
             }.padding(.horizontal, 16)
@@ -231,8 +240,10 @@ struct RevealExperienceView: View {
             HStack(spacing: 12) {
                 Button { withAnimation(.bouncy) { showReplay.toggle() } } label: { Label("Replay reaction", systemImage: "play.fill").frame(maxWidth: .infinity).padding(.vertical, 14) }
                     .buttonStyle(.glass)
-                Button { dismiss() } label: {
-                    Text(appModel.hasPeek(after: peek) ? "Next Peek" : "Close")
+                Button {
+                    if let next = appModel.nextIncomingPeek, let onNext { onNext(next) } else { dismiss() }
+                } label: {
+                    Text(appModel.nextIncomingPeek != nil && onNext != nil ? "Next Peek" : "Close")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
