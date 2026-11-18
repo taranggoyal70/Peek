@@ -282,15 +282,10 @@ struct InboxView: View {
                     Text("Received")
                 }
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(maxWidth: .infinity, minHeight: 40)
             }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .glassEffect(.regular, in: Capsule())
-            .contentShape(Capsule())
+            .peekGlassButton()
+            .buttonBorderShape(.capsule)
 
             // SENT
             Button {
@@ -303,15 +298,10 @@ struct InboxView: View {
                     Text("Sent")
                 }
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(maxWidth: .infinity, minHeight: 40)
             }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .glassEffect(.regular, in: Capsule())
-            .contentShape(Capsule())
+            .peekGlassButton()
+            .buttonBorderShape(.capsule)
         }
         .frame(maxWidth: .infinity)
     }
