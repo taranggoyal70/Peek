@@ -39,7 +39,7 @@ private struct ReactionPlayerSheet: View {
         ZStack {
             Color.black.ignoresSafeArea()
             VStack(spacing: 15) {
-                ZStack { DemoCameraPreview(); Image(systemName: "play.fill").font(.title).frame(width: 64, height: 64).glassEffect(.regular.interactive(), in: .circle) }
+                ZStack { DemoCameraPreview(showsPerson: false); Image(systemName: "play.fill").font(.title).frame(width: 64, height: 64).glassEffect(.regular.interactive(), in: .circle) }
                     .frame(height: 250).clipShape(RoundedRectangle(cornerRadius: 30))
                 Text("\(friend.name)’s reaction").font(.title3.bold()); Text("Captured at the reveal").font(.subheadline).foregroundStyle(.secondary)
             }.padding(18)
