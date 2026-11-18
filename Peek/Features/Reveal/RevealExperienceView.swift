@@ -13,13 +13,13 @@ struct RevealExperienceView: View {
     @State private var phase: Phase = .preparing
     @State private var didFinish = false
     @State private var showReplay = false
-    @State private var ambientGlow = false
     /// True once the phone has been seen folded (closed or part-open) during this reveal.
     /// A Peek opened while the Duo is already flat must not reveal itself: you fold, then unfold.
     @State private var armed = false
     private var progress: Double { armed ? posture.revealProgress : 0 }
     private var needsFoldFirst: Bool { posture.posture == .fullyOpen && !armed }
-    private static let breathe = Animation.easeInOut(duration: 2.4).repeatForever(autoreverses: true)
+    /// One full glow cycle in seconds (the old loop ran 2.4 s each way). Driven by `IdleClock`.
+    private static let glowPeriod = 4.8
 
     var body: some View {
         ZStack {
@@ -27,9 +27,6 @@ struct RevealExperienceView: View {
             if phase == .result { resultView } else { revealStage }
         }
         .task { await prepareAndStart() }
-        // The glow animation is scoped to the views that breathe (see `breathe`), so the
-        // repeating animation never catches the layout of the photo, camera, or controls.
-        .onAppear { ambientGlow = true }
         .onChange(of: posture.posture) { old, new in
             if new == .closed || new == .partiallyOpen { armed = true }
             guard phase == .revealing else { return }
@@ -46,8 +43,7 @@ struct RevealExperienceView: View {
     private var revealStage: some View {
         GeometryReader { proxy in
             ZStack {
-                revealBackdrop
-                    .animation(Self.breathe, value: ambientGlow)
+                IdleClock { time in revealBackdrop(glow: idleWave(time, period: Self.glowPeriod)) }
 
                 invitation
                     .opacity(max(0, 1 - progress * 2.4))
@@ -84,7 +80,7 @@ struct RevealExperienceView: View {
         }.animation(.spring(response: 0.5, dampingFraction: 0.84), value: progress)
     }
 
-    private var revealBackdrop: some View {
+    private func revealBackdrop(glow: Double) -> some View {
         ZStack {
             LinearGradient(
                 colors: [Color(hex: "05050A"), Color(hex: "10091A"), Color(hex: "050817")],
@@ -93,14 +89,14 @@ struct RevealExperienceView: View {
             )
 
             RadialGradient(
-                colors: [Color.peekPink.opacity(ambientGlow ? 0.38 : 0.2), .clear],
+                colors: [Color.peekPink.opacity(0.2 + 0.18 * glow), .clear],
                 center: UnitPoint(x: 0.83, y: 0.36),
                 startRadius: 8,
-                endRadius: ambientGlow ? 330 : 255
+                endRadius: 255 + 75 * glow
             )
 
             RadialGradient(
-                colors: [Color(hex: "526BFF").opacity(ambientGlow ? 0.35 : 0.18), .clear],
+                colors: [Color(hex: "526BFF").opacity(0.18 + 0.17 * glow), .clear],
                 center: UnitPoint(x: 0.72, y: 0.88),
                 startRadius: 12,
                 endRadius: 290
@@ -120,7 +116,7 @@ struct RevealExperienceView: View {
                             LinearGradient(colors: [.white, Color.peekPink, Color(hex: "728BFF")], startPoint: .leading, endPoint: .trailing),
                             lineWidth: 2.5
                         )
-                        .shadow(color: Color.peekPink, radius: ambientGlow ? 22 : 12)
+                        .shadow(color: Color.peekPink, radius: 12 + 10 * glow)
                 }
                 .offset(y: 42)
         }
@@ -131,9 +127,8 @@ struct RevealExperienceView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 108)
 
-            RevealOrb(glowing: ambientGlow)
+            IdleClock { time in RevealOrb(glow: idleWave(time, period: Self.glowPeriod)) }
                 .frame(width: 190, height: 190)
-                .animation(Self.breathe, value: ambientGlow)
 
             Spacer(minLength: 55)
 
@@ -180,8 +175,13 @@ struct RevealExperienceView: View {
                         in: Capsule()
                     )
                     .overlay(Capsule().stroke(LinearGradient(colors: [Color.peekPink.opacity(0.75), .white.opacity(0.24), Color(hex: "7790FF")], startPoint: .leading, endPoint: .trailing)))
-                    .shadow(color: Color(hex: "526FFF").opacity(ambientGlow ? 0.65 : 0.35), radius: ambientGlow ? 28 : 17, y: 8)
-                    .animation(Self.breathe, value: ambientGlow)
+                    .background {
+                        IdleClock { time in
+                            let glow = idleWave(time, period: Self.glowPeriod)
+                            Capsule().fill(Color(hex: "526FFF").opacity(0.35 + 0.3 * glow))
+                                .blur(radius: 17 + 11 * glow).offset(y: 8)
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Simulates unfolding the device")
@@ -295,7 +295,8 @@ private struct NeonHorizon: Shape {
 }
 
 private struct RevealOrb: View {
-    let glowing: Bool
+    /// 0 to 1, from `idleWave`.
+    let glow: Double
 
     var body: some View {
         ZStack {
@@ -303,7 +304,7 @@ private struct RevealOrb: View {
                 .fill(.ultraThinMaterial)
                 .overlay(Circle().fill(LinearGradient(colors: [Color(hex: "8B77FF").opacity(0.5), Color.peekPink.opacity(0.28), .white.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing)))
                 .overlay(Circle().stroke(LinearGradient(colors: [.white.opacity(0.9), Color.peekPink, Color(hex: "778CFF")], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2))
-                .shadow(color: Color.peekPink.opacity(glowing ? 0.72 : 0.4), radius: glowing ? 34 : 20)
+                .shadow(color: Color.peekPink.opacity(0.4 + 0.32 * glow), radius: 20 + 14 * glow)
 
             Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 116, weight: .ultraLight))
@@ -324,7 +325,7 @@ private struct RevealOrb: View {
                 .rotationEffect(.degrees(-34))
                 .offset(x: 91, y: -89)
         }
-        .scaleEffect(glowing ? 1.025 : 0.98)
+        .scaleEffect(0.98 + 0.045 * glow)
     }
 }
 

@@ -4,8 +4,6 @@ import UIKit
 struct InboxView: View {
     @Bindable var model: AppModel
     @State private var path: [Peek] = []
-    @State private var isFloating = false
-    @State private var glow = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -40,13 +38,6 @@ struct InboxView: View {
                     SenderReactionsView(peek: DemoData.sent)
                 }
             }
-            .onAppear {
-                // Animations are scoped with .animation(_:value:) on the views that float and glow.
-                // A repeatForever withAnimation here would also catch the first layout of the glass
-                // buttons, and they would grow and shrink forever.
-                isFloating = true
-                glow = true
-            }
         }
         .preferredColorScheme(.dark)
     }
@@ -54,45 +45,48 @@ struct InboxView: View {
     // MARK: - Background
 
     private var background: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: "050506"),
-                    Color(hex: "111116"),
-                    .black
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+        IdleClock { time in
+            let glow = idleWave(time, period: Self.pulsePeriod)
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(hex: "050506"),
+                        Color(hex: "111116"),
+                        .black
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
 
-            RadialGradient(
-                colors: [
-                    Color.peekPink.opacity(glow ? 0.15 : 0.08),
-                    .clear
-                ],
-                center: .center,
-                startRadius: 10,
-                endRadius: 260
-            )
-            .scaleEffect(glow ? 1.08 : 0.92)
-            .offset(y: 5)
+                RadialGradient(
+                    colors: [
+                        Color.peekPink.opacity(0.08 + 0.07 * glow),
+                        .clear
+                    ],
+                    center: .center,
+                    startRadius: 10,
+                    endRadius: 260
+                )
+                .scaleEffect(0.92 + 0.16 * glow)
+                .offset(y: 5)
 
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.07),
-                    .clear
-                ],
-                center: .topTrailing,
-                startRadius: 0,
-                endRadius: 280
-            )
+                RadialGradient(
+                    colors: [
+                        Color.white.opacity(0.07),
+                        .clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 280
+                )
+            }
         }
-        .animation(Self.pulse, value: glow)
         .ignoresSafeArea()
     }
 
-    private static let float = Animation.easeInOut(duration: 2.2).repeatForever(autoreverses: true)
-    private static let pulse = Animation.easeInOut(duration: 1.6).repeatForever(autoreverses: true)
+    /// Full cycles in seconds (the old loops ran 2.2 s and 1.6 s each way).
+    private static let floatPeriod = 4.4
+    private static let pulsePeriod = 3.2
 
     // MARK: - Header
 
@@ -126,21 +120,20 @@ struct InboxView: View {
 
     private var hero: some View {
         VStack(spacing: 26) {
-            PeekMark()
-                .frame(width: 126, height: 126)
-                .offset(y: isFloating ? -8 : 5)
-                .rotationEffect(
-                    .degrees(isFloating ? 2 : -2)
-                )
-                .shadow(
-                    color: Color.peekPink.opacity(
-                        glow ? 0.42 : 0.2
-                    ),
-                    radius: glow ? 34 : 20,
-                    y: 12
-                )
-                .animation(Self.float, value: isFloating)
-                .animation(Self.pulse, value: glow)
+            IdleClock { time in
+                let float = idleWave(time, period: Self.floatPeriod)
+                let glow = idleWave(time, period: Self.pulsePeriod)
+                PeekMark()
+                    .frame(width: 126, height: 126)
+                    .offset(y: 5 - 13 * float)
+                    .rotationEffect(.degrees(-2 + 4 * float))
+                    .shadow(
+                        color: Color.peekPink.opacity(0.2 + 0.22 * glow),
+                        radius: 20 + 14 * glow,
+                        y: 12
+                    )
+            }
+            .frame(width: 126, height: 126)
 
             VStack(spacing: 9) {
                 Text(heroTitle)

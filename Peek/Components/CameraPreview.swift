@@ -22,13 +22,18 @@ struct CameraPreview: UIViewRepresentable {
 struct DemoCameraPreview: View {
     /// Off when something else (a play button) sits in the middle.
     var showsPerson = true
-    @State private var drift = false
 
     var body: some View {
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
             ZStack {
-                LinearGradient(colors: [.indigo.opacity(0.8), .pink.opacity(0.55), .black], startPoint: drift ? .topLeading : .bottomTrailing, endPoint: drift ? .bottomTrailing : .topLeading)
+                // The gradient drifts corner to corner every 6 s, driven by the clock (see IdleClock).
+                IdleClock { time in
+                    let drift = idleWave(time, period: 6)
+                    LinearGradient(colors: [.indigo.opacity(0.8), .pink.opacity(0.55), .black],
+                                   startPoint: UnitPoint(x: 1 - drift, y: 1 - drift),
+                                   endPoint: UnitPoint(x: drift, y: drift))
+                }
                 if showsPerson {
                     Image(systemName: "person.crop.circle.fill")
                         .resizable().scaledToFit()
@@ -47,8 +52,6 @@ struct DemoCameraPreview: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: drift)
-        .onAppear { drift = true }
         .accessibilityLabel("Simulated reaction")
     }
 }

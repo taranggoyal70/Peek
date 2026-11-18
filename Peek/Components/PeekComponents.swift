@@ -78,3 +78,26 @@ extension View {
         frame(maxWidth: maxWidth).frame(maxWidth: .infinity)
     }
 }
+
+/// Drives idle loops (floating, glowing, drifting) from the clock instead of from animated state.
+///
+/// A `repeatForever` animation started from a state change applies to every other change in the
+/// same transaction. When that happens while the window is still settling its size (at launch, or
+/// on the Duo's inner screen), SwiftUI replays the layout change forever: buttons grow and shrink
+/// and the mark drifts across the screen. A value computed from the clock has no transaction to
+/// capture, so it can only ever move what it is applied to. Pauses when Reduce Motion is on.
+struct IdleClock<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ViewBuilder var content: (TimeInterval) -> Content
+
+    var body: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            content(reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
+        }
+    }
+}
+
+/// Eases 0 → 1 → 0 once every `period` seconds.
+func idleWave(_ time: TimeInterval, period: Double) -> Double {
+    0.5 - 0.5 * cos(2 * .pi * time / period)
+}
