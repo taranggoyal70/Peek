@@ -28,6 +28,7 @@ struct FriendsView: View {
                         }
                     }
                     .padding(18)
+                    .peekReadableWidth()
                 }
             }
             .navigationTitle("Friends")

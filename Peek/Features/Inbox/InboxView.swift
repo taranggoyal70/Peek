@@ -26,6 +26,7 @@ struct InboxView: View {
                 }
                 .padding(.horizontal, 22)
                 .padding(.bottom, 18)
+                .peekReadableWidth()
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Peek.self) { peek in

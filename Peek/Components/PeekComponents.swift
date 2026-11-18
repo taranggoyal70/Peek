@@ -71,4 +71,10 @@ extension View {
     func peekGlassSurface(cornerRadius: CGFloat = 24) -> some View {
         glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
     }
+
+    /// Keeps lists and cards phone-width and centered on the Duo's wide inner screen,
+    /// instead of stretching edge to edge.
+    func peekReadableWidth(_ maxWidth: CGFloat = 560) -> some View {
+        frame(maxWidth: maxWidth).frame(maxWidth: .infinity)
+    }
 }

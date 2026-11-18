@@ -8,7 +8,10 @@ struct SenderReactionsView: View {
             Color.black.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    DemoPhoto(name: peek.imageName).frame(height: 420).clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    // At most half the visible height, so the reactions below stay on screen.
+                    DemoPhoto(name: peek.imageName)
+                        .containerRelativeFrame(.vertical) { height, _ in min(420, height * 0.5) }
+                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                         .overlay(alignment: .bottomLeading) { Text(peek.caption ?? "").font(.headline).padding(20) }
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Reactions").font(.title2.bold())
@@ -27,6 +30,7 @@ struct SenderReactionsView: View {
                         }
                     }
                 }.padding(18)
+                .peekReadableWidth()
             }
         }.navigationTitle("Your Peek").navigationBarTitleDisplayMode(.inline)
             .sheet(item: $selected) { friend in ReactionPlayerSheet(friend: friend).presentationDetents([.medium]).presentationDragIndicator(.visible) }
