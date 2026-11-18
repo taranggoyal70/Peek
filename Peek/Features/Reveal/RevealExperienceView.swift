@@ -14,7 +14,11 @@ struct RevealExperienceView: View {
     @State private var didFinish = false
     @State private var showReplay = false
     @State private var ambientGlow = false
-    private var progress: Double { posture.revealProgress }
+    /// True once the phone has been seen folded (closed or part-open) during this reveal.
+    /// A Peek opened while the Duo is already flat must not reveal itself: you fold, then unfold.
+    @State private var armed = false
+    private var progress: Double { armed ? posture.revealProgress : 0 }
+    private var needsFoldFirst: Bool { posture.posture == .fullyOpen && !armed }
     private static let breathe = Animation.easeInOut(duration: 2.4).repeatForever(autoreverses: true)
 
     var body: some View {
@@ -27,9 +31,10 @@ struct RevealExperienceView: View {
         // repeating animation never catches the layout of the photo, camera, or controls.
         .onAppear { ambientGlow = true }
         .onChange(of: posture.posture) { old, new in
+            if new == .closed || new == .partiallyOpen { armed = true }
             guard phase == .revealing else { return }
             if new == .partiallyOpen && old == .closed { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
-            if new == .fullyOpen { finishReveal() }
+            if new == .fullyOpen && armed { finishReveal() }
         }
         .duoHingeObserver(posture: posture)
         .preferredColorScheme(.dark)
@@ -138,7 +143,7 @@ struct RevealExperienceView: View {
                     .foregroundStyle(
                         LinearGradient(colors: [.white, Color(hex: "FF83C4"), Color(hex: "839CFF")], startPoint: .leading, endPoint: .trailing)
                     )
-                Text("The reveal follows your iPhone Duo.")
+                Text(needsFoldFirst ? "Fold your iPhone Duo, then unfold it." : "The reveal follows your iPhone Duo.")
                     .font(.system(size: 17, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.58))
             }
@@ -256,6 +261,8 @@ struct RevealExperienceView: View {
     private func prepareAndStart() async {
         await capture.prepare(); try? capture.startRecording()
         withAnimation(.easeInOut(duration: 0.35)) { phase = .revealing }
+        // If the phone was folded and unfolded while the camera was still starting, finish now.
+        if posture.posture == .fullyOpen && armed { finishReveal() }
     }
     private func finishReveal() {
         guard !didFinish else { return }
