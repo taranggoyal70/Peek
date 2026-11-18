@@ -34,11 +34,11 @@ final class DuoPostureService {
         }
     }
 
-    #if targetEnvironment(simulator)
+    /// Drives the reveal without a hinge (the simulator, or an iPhone that isn't a Duo).
+    /// Ignored once real hinge data has arrived, so it can never fight the device.
     func setDemoProgress(_ progress: Double) {
         guard !hasRealHinge else { return }
         revealProgress = min(max(progress, 0), 1)
         posture = progress >= 0.98 ? .fullyOpen : (progress <= 0.02 ? .closed : .partiallyOpen)
     }
-    #endif
 }
